@@ -31,7 +31,7 @@ Reordering object keys does not create field drift; tool list order is ignored f
 3. Have the owner inspect the actual changed manifest, server identity and access scope.
 4. Replace the baseline only after review. This tool never approves or replaces it.
 
-12 fixture tests cover description/schema/extension changes, additions/removals, name/key duplicates, malformed inputs, object order and null-versus-missing values.
+20 fixture tests cover description/schema/extension changes, additions/removals, name/key duplicates, malformed inputs, object order and null-versus-missing values.
 
 ## Limits
 
@@ -39,5 +39,5 @@ Reordering object keys does not create field drift; tool list order is ignored f
 - Does not authenticate servers, prove tool effects, validate JSON Schema semantics or enforce runtime access.
 - Protect both captured inventory and baseline outside agent write access. A caller able to replace both can hide drift.
 - No network client, server polling, signatures, automatic install, baseline update or executor.
-- Manifest names and fingerprints can be sensitive metadata. Do not publish real private inventories. No file-size/depth cap; do not feed unlimited untrusted JSON.
+- Manifest names and fingerprints can be sensitive metadata. Do not publish real private inventories. CLI reads at most 1 MiB + 1 byte per input and rejects files over 1 MiB, invalid UTF-8, and nesting deeper than 64 edges from the root. These are conservative CLI limits, not a sandbox or a general denial-of-service guarantee. Direct compare() calls remain trusted-input only.
 - Intended for a trusted controller's preflight review, not a claim of safe autonomous operation.
