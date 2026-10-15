@@ -3,6 +3,21 @@ import argparse
 import hashlib
 import json
 
+MAX_BYTES = 1024 * 1024
+MAX_DEPTH = 64
+
+
+def check_depth(value):
+    pending = [(value, 0)]
+    while pending:
+        node, depth = pending.pop()
+        if depth > MAX_DEPTH:
+            raise ValueError("inventory nesting exceeds limit")
+        if isinstance(node, dict):
+            pending.extend((v, depth + 1) for v in node.values())
+        elif isinstance(node, list):
+            pending.extend((v, depth + 1) for v in node)
+
 
 def fingerprint(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
@@ -47,8 +62,17 @@ def load(path):
             if k in d: raise ValueError('duplicate JSON key')
             d[k]=v
         return d
-    with open(path,encoding='utf-8') as f:
-        return json.load(f,object_pairs_hook=unique,parse_constant=lambda _: (_ for _ in ()).throw(ValueError('nonfinite number')))
+    with open(path, 'rb') as f:
+        raw = f.read(MAX_BYTES + 1)
+    if len(raw) > MAX_BYTES:
+        raise ValueError('inventory exceeds byte limit')
+    try:
+        doc = json.loads(raw.decode('utf-8'), object_pairs_hook=unique,
+                         parse_constant=lambda _: (_ for _ in ()).throw(ValueError('nonfinite number')))
+    except RecursionError as exc:
+        raise ValueError('inventory nesting exceeds parser limit') from exc
+    check_depth(doc)
+    return doc
 
 
 def main():
